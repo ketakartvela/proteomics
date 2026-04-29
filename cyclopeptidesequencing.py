@@ -1,11 +1,11 @@
-This implementation uses the **Leaderboard Cyclopeptide Sequencing algorithm**, which:
+#This implementation uses the **Leaderboard Cyclopeptide Sequencing algorithm**, which:
 
- Starts with an empty peptide  
- Iteratively expands candidate peptides using possible amino acid masses  
- Filters candidates based on total mass  
- Scores candidates against the experimental spectrum  
- Keeps only the top `N` best scoring candidates (leaderboard)  
-  Returns the best-scoring cyclic peptide(s) 
+ #Starts with an empty peptide  
+ #Iteratively expands candidate peptides using possible amino acid masses  
+ #Filters candidates based on total mass  
+ #Scores candidates against the experimental spectrum  
+ #Keeps only the top `N` best scoring candidates (leaderboard)  
+ #Returns the best-scoring cyclic peptide(s) 
 with open (r"Tyrocidine_B1_Spectrum_10.txt", "r") as f:
     
     N=1000
