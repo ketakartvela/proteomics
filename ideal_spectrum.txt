@@ -1,0 +1,70 @@
+#This script implements the basic Cyclopeptide Sequencing algorithm. Given an ideal mass spectrum, it reconstructs all cyclic peptides whose theoretical cyclic spectra exactly match the input spectrum.
+with open(r"spectrum.txt","r") as f:
+    lines = f.read().strip().split("\n")   # fixed newline split
+    spectrum = list(map(int, lines[0].split()))
+
+
+from collections import Counter
+def cyclic_spectrum(peptide):
+    prefix_mass=[0] 
+    for m in peptide:
+        prefix_mass.append(prefix_mass[-1]+m)
+    peptide_mass=prefix_mass[-1]
+    spectrum=[0]
+    for i in range(len(peptide)):
+        for j in range(i+1, len(peptide)+1):
+             spectrum.append(prefix_mass[j]-prefix_mass[i])
+             if i>0 and j<len(peptide):
+                spectrum.append(peptide_mass - (prefix_mass[j] - prefix_mass[i]))
+                                                                             
+    return sorted(spectrum)
+AMINO_ACID_MASSES = [
+
+        57, 71, 87, 97, 99, 101, 103, 113, 114,
+
+        115, 128, 129, 131, 137, 147, 156, 163, 186
+
+    ]
+def linear_spectrum(peptide):
+    prefix_mass=[0]
+    for m in peptide:
+        prefix_mass.append(prefix_mass[-1]+m)
+    spectrum=[0]
+    for i in range(len(peptide)):
+        for j in range(i+1, len(peptide)+1):
+            spectrum.append(prefix_mass[j]-prefix_mass[i])
+    return sorted(spectrum)
+
+def is_consistent(peptide,spectrum):
+    peptide_spectrum=linear_spectrum(peptide)
+    peptide_counter=Counter(peptide_spectrum)
+    spectrum_counter=Counter(spectrum)
+    for mass in peptide_counter:
+        if peptide_counter[mass]>spectrum_counter[mass]:
+            return False
+    return True
+
+def expand(peptides):
+    return [peptide + [mass] for peptide in peptides for mass in AMINO_ACID_MASSES]
+
+def cyclopeptide_sequencing(spectrum):
+    peptides=[[]]
+    final_peptides=[]
+    parent_mass=max(spectrum)
+    while peptides:
+        peptides=expand(peptides)
+        new_peptides=[]
+        for peptide in peptides:
+            mass=sum(peptide)
+            if mass==parent_mass:
+                if cyclic_spectrum(peptide)==sorted(spectrum):
+                
+                    final_peptides.append(peptide)
+            elif mass<parent_mass and is_consistent(peptide, spectrum):
+                new_peptides.append(peptide)
+        peptides=new_peptides
+    return final_peptides
+result = cyclopeptide_sequencing(spectrum)
+for peptide in result:
+
+    print("-".join(map(str, peptide)))
