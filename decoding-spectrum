@@ -1,0 +1,128 @@
+## Peptide Sequencing from an Ideal Spectrum
+
+#This implementation reconstructs a peptide from its ideal mass spectrum using a spectrum graph approach.
+#The algorithm:
+#Uses an integer amino acid mass table.
+#Builds a spectrum graph where each mass represents a node.
+#Adds an edge between two masses  when their difference matches an amino acid mass.
+#Finds all possible paths from zero to the parent mass.
+#Converts each path into a candidate peptide sequence.
+#Computes the ideal spectrum of each candidate.
+#Returns the peptide whose ideal spectrum exactly matches the input spectrum.
+
+  
+
+
+
+
+
+
+integer_mass_table = {
+    "G": 57,
+    "A": 71,
+    "S": 87,
+    "P": 97,
+    "V": 99,
+    "T": 101,
+    "C": 103,
+    "I": 113,
+    "L": 113,
+    "N": 114,
+    "D": 115,
+    "K": 128,
+    "Q": 128,
+    "E": 129,
+    "M": 131,
+    "H": 137,
+    "F": 147,
+    "R": 156,
+    "Y": 163,
+    "W": 186
+}
+spectrum=[87, 163, 216, 262, 372, 448, 500, 562, 637, 691, 750, 877, 906, 991, 1069, 1128, 1170, 1256, 1273, 1369, 1401, 1472, 1532, 1559, 1629, 1630, 1743, 1786, 1899, 1900, 1970, 1997, 2057, 2128, 2160, 2256, 2273, 2359, 2401, 2460, 2538, 2623, 2652, 2779, 2838, 2892, 2967, 3029, 3081, 3157, 3267, 3313, 3366, 3442, 3529]
+from collections import defaultdict
+def decoding_spectrum(spectrum):
+    new_spectrum=[0]+spectrum
+    di=defaultdict(list)
+    
+    for i in range(len(new_spectrum)):
+        Tag=set()
+        for j in range(i,len(new_spectrum)):
+            diff=new_spectrum[j]-new_spectrum[i]
+            for key,value in integer_mass_table.items():
+                if value==diff and value not in Tag:
+                    di[new_spectrum[i]].append((new_spectrum[j],key))
+                    Tag.add(value)
+    return dict(di)
+
+a=decoding_spectrum(spectrum)
+
+def find_paths(spectrum):
+    base=decoding_spectrum(spectrum)
+    base_new=base.copy()
+    source=0
+    sink=spectrum[-1]
+    stack=[source]
+    path=[]
+    adj_list=defaultdict(list)
+    
+    whole_path=[]
+    stack=[(source,[source])]
+    for key in base:
+        for value in base[key]:
+            adj_list[key].append(value[0])
+    adj_list_new = {k: v[:] for k, v in adj_list.items()}
+    while stack:
+        node,path=stack.pop()
+        if node==sink:
+            whole_path.append(path)
+            continue
+        for next_node in adj_list_new[node]:
+            stack.append((next_node,path+[next_node]))
+                         
+    return whole_path 
+def string(spectrum):
+    base=decoding_spectrum(spectrum)
+    second=find_paths(spectrum)
+    string=""
+    answer=[]
+    best_value=None
+    for path in second:
+        string=""
+        for idx in range(len(path)-1):
+            current_node=path[idx]
+            next_node=path[idx+1]
+            for end_node,aa in base[current_node]:
+                if end_node==next_node:
+                    string+=aa
+                    break
+        answer.append(string)
+    return answer
+                    
+def ideal_spectrum(peptide):
+    spect=[]
+    
+    for i in range(1,len(peptide)+1):
+        prefix=peptide[:i]
+        b=0
+        for amino in prefix:
+            b+=integer_mass_table[amino]
+        spect.append(b)
+    
+    for k in range(1, len(peptide)):
+        suffix=peptide[k:]
+        c=0
+        for amino in suffix:
+            c+=integer_mass_table[amino]
+        spect.append(c)
+    return sorted(spect)
+def result(spectrum):
+    peptides=string(spectrum)
+    best_peptide=None
+    for peptide in peptides:
+        if ideal_spectrum(peptide)==spectrum:
+            best_peptide=peptide
+    return best_peptide
+        
+print(result(spectrum))
+    
