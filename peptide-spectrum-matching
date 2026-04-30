@@ -1,0 +1,102 @@
+#Peptide-Spectrum Matching Search
+
+#This script searches peptide substrings inside a parent peptide that best match collection of spectral vectors.
+
+#For each spectral vector:
+# We generate candidate substrings from the parent peptide.
+# We score each substring using prefix masses,spectral vector scores.
+# and we keep substrings whose score is above a given threshold.
+
+from collections import defaultdict
+
+dictionary = {
+
+    'G': 57,'A': 71,'S': 87,'P': 97,'V': 99,'T': 101,'C': 103,'I': 113,'L': 113,
+
+    'N': 114,'D': 115,'K': 128,'Q': 128,'E': 129,'M': 131,'H': 137,'F': 147,'R': 156,'Y': 163,'W': 186
+
+    }
+
+amino_acid_by_mass_ = {
+    57:"G", 71:"A", 87:"S", 97:"P", 99:"V", 101:"T", 103:"C",
+    113:"L", 114:"N", 115:"D", 128:"Q", 129:"E", 131:"M",
+    137:"H", 147:"F", 156:"R", 163:"Y", 186:"W"
+}
+
+allowed_masses = list(amino_acid_by_mass_.keys())
+
+
+def peptide_sequencing(vector):
+    masses = []
+    for idx in range(len(vector)):
+        if vector[idx] == 1:
+            masses.append(idx + 1)
+
+    if not masses:
+        return ""
+
+    best_string = amino_acid_by_mass_[masses[0]]
+    for idx in range(1, len(masses)):
+        diff = masses[idx] - masses[idx - 1]
+        if diff not in amino_acid_by_mass_:
+            return "Invalid peptide vector"
+        best_string += amino_acid_by_mass_[diff]
+
+    return best_string
+
+def score(vect,peptide):
+    new_vect=[0]+vect
+    score=0
+    total_score=[]
+    for end in range(1,(len(peptide)+1)):
+        prefix_score=0
+        prefix=peptide[:end]
+        for amino in prefix:
+            prefix_score+=dictionary[amino]
+            if prefix_score>=len(new_vect):
+                return float("-inf")
+        score+=new_vect[prefix_score]
+        
+    return score
+   
+
+
+def best_substring(parent_peptide, vect):
+    best_score=float("-inf")
+    best_string=""
+    
+    new_vec=[0]+vect
+    m=len(vect)
+    for start in range(len(parent_peptide)):
+        cumulative_mass=0
+        mass_score=0
+        string=""
+        for new_amino in range(start, len(parent_peptide)):
+             cumulative_mass+=dictionary[parent_peptide[new_amino]]
+             string+=parent_peptide[new_amino]
+             if cumulative_mass>m:
+                 break
+             mass_score += new_vec[cumulative_mass]
+
+             if cumulative_mass == m and mass_score > best_score:
+                best_score = mass_score
+                best_string = string
+    return best_string
+
+def PMS_search(vectors, parent_peptide,theshold):
+    PMS=set()
+    
+    for vector in vectors:
+        substring=best_substring(parent_peptide, vector)
+        if score(vector,substring)>=theshold:
+            PMS.add(substring)
+    return PMS
+          
+with open(r"peptide-spectrum-match-input","r") as f:
+     lines=[line.strip() for line in f if line.strip()]
+threshold=int(lines[-1])
+parent_peptide=lines[-2]
+vectors = [list(map(int, line.split())) for line in lines[:-2]]
+
+result=PMS_search(vectors,parent_peptide,threshold)
+print(result)
