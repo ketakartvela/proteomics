@@ -1,0 +1,77 @@
+# Spectral Dictionary Probability
+
+# This script calculates the statistical significance of a peptide-spectrum match.
+
+# Given a spectral vector, score threshold, and maximum score, it uses dynamic
+# programming to compute the probability that a random peptide achieves a score
+# greater than or equal to the threshold.
+
+# This helps estimate whether a peptide-spectrum match is likely meaningful or
+# could occur by chance.
+
+mass_table = {
+    "G": 57,
+    "A": 71,
+    "S": 87,
+    "P": 97,
+    "V": 99,
+    "T": 101,
+    "C": 103,
+    "I": 113,
+    "L": 113,
+    "N": 114,
+    "D": 115,
+    "K": 128,
+    "Q": 128,
+    "E": 129,
+    "M": 131,
+    "H": 137,
+    "F": 147,
+    "R": 156,
+    "Y": 163,
+    "W": 186
+}
+toy={"X":4,"Y":5}
+def dictionary_size(vector,threshold,max_score):
+     size=[[0]*(max_score+1) for _ in range(len(vector)+1)] 
+     size[0][0]=1
+     s=[0]+vector
+     for i in range(1,len(s)):
+        for t in range((max_score+1)):
+            for a in mass_table.values():
+                if (i-a)<0 or t-s[i]<0 or t-s[i]>max_score:
+                    continue
+                else:
+                   size[i][t]+=size[i-a][t-s[i]]
+     return size
+def probability_significance(vector,threshold,max_score):
+     pr=[[0]*(max_score+1) for _ in range(len(vector)+1)]
+     pr[0][0]=1
+     s=[0]+vector
+     for i in range(1,len(s)):
+         for t in range((max_score+1)):
+             for a in mass_table.values():
+                 if (i-a)<0 or t-s[i]<0 or t-s[i]>max_score:
+                     continue
+                 else:
+                     pr[i][t]+=1/20*(pr[i-a][t-s[i]])
+     return pr
+
+
+with open(r"probability_input","r") as f:
+    lines=f.read().strip().splitlines()
+    vector=list(map(int,lines[0].split()))
+    threshold=int(lines[-2])
+    max_score=int(lines[-1])
+pr=probability_significance(vector, threshold, max_score)
+s=[0]+vector
+result=0
+for t in range(threshold,(max_score+1)):
+    result+=pr[len(s)-1][t]
+print(result)
+size=dictionary_size(vector,threshold,max_score)
+
+
+answer=0
+for t in range(threshold,(max_score+1)):
+     answer+=size[len(s)-1][t]
