@@ -1,0 +1,86 @@
+#This script reconstructs the highest-scoring peptide from a spectral vector.
+#The algorithm:
+# Treats the spectral vector as scores assigned to peptide prefix masses.
+# Uses valid amino acid masses to move through the vector.
+# Applies dynamic programming to find the highest-scoring path from mass 0
+   to the final mass.
+# Converts the selected path into a peptide sequence.
+
+
+from collections import defaultdict
+
+mass_by_amino_acid = {
+    "G":57, "A":71, "S":87, "P":97, "V":99, "T":101, "C":103,
+    "L":113, "N":114, "D":115, "Q":128, "E":129, "M":131,
+    "H":137, "F":147, "R":156, "Y":163, "W":186, "I":113, "K":128
+}
+
+amino_acid_by_mass_ = {
+    57:"G", 71:"A", 87:"S", 97:"P", 99:"V", 101:"T", 103:"C",
+    113:"L", 114:"N", 115:"D", 128:"Q", 129:"E", 131:"M",
+    137:"H", 147:"F", 156:"R", 163:"Y", 186:"W"
+}
+
+allowed_masses = list(amino_acid_by_mass_.keys())
+
+
+def peptide_sequencing(vector):
+    masses = []
+    for idx in range(len(vector)):
+        if vector[idx] == 1:
+            masses.append(idx + 1)
+
+    if not masses:
+        return ""
+
+    best_string = amino_acid_by_mass_[masses[0]]
+    for idx in range(1, len(masses)):
+        diff = masses[idx] - masses[idx - 1]
+        if diff not in amino_acid_by_mass_:
+            return "Invalid peptide vector"
+        best_string += amino_acid_by_mass_[diff]
+
+    return best_string
+
+
+def spectrum(vect):
+    new_vect = [0] + vect
+    sink = len(vect)
+
+    best_score = [float("-inf")] * (sink + 1)
+    parent = [None] * (sink + 1)
+    best_score[0] = 0
+
+    for i in range(sink + 1):
+        if best_score[i] == float("-inf"):
+            continue
+
+        for mass in allowed_masses:
+            j = i + mass
+            if j <= sink:
+                candidate = best_score[i] + new_vect[j]
+                if candidate > best_score[j]:
+                    best_score[j] = candidate
+                    parent[j] = i
+
+    if best_score[sink] == float("-inf"):
+        return "No valid peptide"
+
+    path = []
+    node = sink
+    while node is not None:
+        path.append(node)
+        node = parent[node]
+    path.reverse()
+
+    peptide_vec = [0] * sink
+    for mass in path[1:]:
+        peptide_vec[mass - 1] = 1
+
+    return peptide_sequencing(peptide_vec)
+
+
+with open(r"vector_input.txt, "r") as f:
+    answ = list(map(int, f.read().strip().split()))
+
+print(spectrum(answ))
